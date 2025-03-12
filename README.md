@@ -1,7 +1,7 @@
 #🚀 AI-Powered Career Mapping Tool - "Trajectory.AI"
 
 
-Check out the live frontend of Trajectory.AI here: Trajectory.AI Frontend
+Check out the live frontend of Trajectory.AI here: [Trajectory.AI Frontend](https://trajectory-iwfm-p6qw9v0rx-tanishk-varshneys-projects.vercel.app/)
 
 ##🔥 Overview
 

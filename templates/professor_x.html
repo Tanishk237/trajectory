@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NeuroPath Chat</title>
+    <style>
+        body {
+            background-color: #0a0f1f;
+            color: #d6b4fc;
+            font-family: 'Arial', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            text-align: center;
+            flex-direction: column;
+        }
+        .container {
+            max-width: 600px;
+        }
+        h1 {
+            font-size: 3rem;
+            font-weight: bold;
+            text-shadow: 0 0 10px #b47cff;
+        }
+        .chat-box {
+            width: 80%;
+            height: 300px;
+            border: 2px solid #6c4ab6;
+            border-radius: 10px;
+            padding: 10px;
+            overflow-y: auto;
+            background: #12172b;
+            color: #fff;
+            text-align: left;
+            margin-bottom: 10px;
+        }
+        input {
+            width: 70%;
+            padding: 10px;
+            font-size: 1rem;
+            border: 2px solid #6c4ab6;
+            border-radius: 20px;
+            background: transparent;
+            color: #fff;
+            text-align: center;
+            outline: none;
+        }
+        button {
+            margin: 10px;
+            padding: 12px 20px;
+            font-size: 1rem;
+            border: none;
+            border-radius: 25px;
+            background-color: #6c4ab6;
+            color: white;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+        button:hover {
+            background-color: #b47cff;
+        }
+        .mic-btn {
+            background-color: #ff4081;
+            font-size: 1.2rem;
+        }
+        .mic-btn:hover {
+            background-color: #ff80b0;
+        }
+        .status {
+            margin-top: 10px;
+            font-size: 1.2rem;
+            color: #b47cff;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>NeuroPath Chat</h1>
+        <div class="chat-box" id="chatBox"></div>
+        <p class="status" id="statusText">Waiting for input...</p>
+        <input type="text" id="userInput" placeholder="Type your message...">
+        <button onclick="sendMessage()">Send</button>
+        <button class="mic-btn" onclick="startListening()">🎙️ Speak</button>
+    </div>
+
+    <script>
+        let isListening = true;
+
+        function sendMessage() {
+            let userInput = document.getElementById('userInput').value;
+            if (userInput.trim() === "") return;
+
+            let chatBox = document.getElementById('chatBox');
+            chatBox.innerHTML += `<p><strong>You:</strong> ${userInput}</p>`;
+            document.getElementById('statusText').innerText = "Fetching response...";
+
+            fetch('/chat', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ message: userInput })
+            })
+            .then(response => response.json())
+            .then(data => {
+                chatBox.innerHTML += `<p><strong>AI:</strong> ${data.response}</p>`;
+                chatBox.scrollTop = chatBox.scrollHeight;
+
+                if (data.status === "exit") {
+                    document.getElementById('statusText').innerText = "Chatbot has exited.";
+                    isListening = false;
+                    return;
+                }
+
+                document.getElementById('statusText').innerText = "Speaking response...";
+
+                let audio = new Audio(`/play_audio?time=${Date.now()}`);
+                audio.play();
+
+                audio.onended = () => {
+                    if (isListening) {
+                        document.getElementById('statusText').innerText = "Listening...";
+                        startListening();
+                    } else {
+                        document.getElementById('statusText').innerText = "Chatbot has exited.";
+                    }
+                };
+            });
+
+            document.getElementById('userInput').value = "";
+        }
+
+        function startListening() {
+            if (!isListening) return;
+
+            document.getElementById('statusText').innerText = "Listening...";
+            let recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+            recognition.lang = 'en-IN';
+
+            recognition.start();
+            recognition.onresult = function(event) {
+                let spokenText = event.results[0][0].transcript.toLowerCase();
+                document.getElementById('userInput').value = spokenText;
+
+                if (spokenText.includes("exit")) {
+                    isListening = false;
+                    document.getElementById('statusText').innerText = "Chatbot has exited.";
+                    return;
+                }
+
+                sendMessage();
+            };
+        }
+    </script>
+</body>
+</html>
